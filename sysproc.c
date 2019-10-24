@@ -89,3 +89,29 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int sys_exits(void) {
+	int status;
+	argint(0, &status);
+	exits(status);
+	return 0;
+}
+
+int sys_waits(void) {
+	int* status;
+	argptr(0, (void*)&status,sizeof(int));
+	cprintf("status: %d ",*status);
+	return waits(status);
+}
+
+int sys_waitpid(void) {
+	int pid;
+	int* status;
+	int op;
+	
+	argint(2, &op);
+	argptr(1, (void*)&status,sizeof(status));
+	argint(0, &pid);
+	
+	return waitpid(pid, status, op);
+}
