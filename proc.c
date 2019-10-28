@@ -88,6 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->priority = 5;
 
   release(&ptable.lock);
 
@@ -319,6 +320,7 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
 void
 scheduler(void)
 {
@@ -354,7 +356,53 @@ scheduler(void)
 
   }
 }
+/*
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+	int maxP = 0;
+	//++maxP;
+	//cprintf("hi");
+    // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(maxP < p->priority) {
+			
+		}
+	}
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		
+		
+      if(p->state != RUNNABLE)
+        continue;
+        cprintf("%d",maxP);
 
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
+    release(&ptable.lock);
+
+  }
+}
+*/
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this
@@ -540,7 +588,7 @@ void exits(int status) {
 
   if(curproc == initproc)
     panic("init exiting");
-    curproc->status = status;
+   curproc->status = status;
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -657,7 +705,10 @@ int waitpid(int pid,int* status, int op) {
       release(&ptable.lock);
       return -1;
     }
-
+	if(op == 1) { //return 0 if child not terminated yet, and WNOHANG defined
+		release(&ptable.lock);
+      return 0;
+	}
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
